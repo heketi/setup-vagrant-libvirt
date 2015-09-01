@@ -1,0 +1,32 @@
+- name: setup epel
+  command: yum -y install http://mirror.clarkson.edu/epel/7/x86_64/e/epel-release-7-5.noarch.rpm creates=/etc/yum.repos.d/epel.repo
+
+- name: update system
+  yum: name=* state=latest
+
+- name: clean iptables
+  command: iptables -F
+
+- name: disable selinux
+  selinux: state=disabled
+
+- name: install libvirt
+  yum: name={{ item }} state=present
+  with_items:
+    - gcc
+    - qemu
+    - qemu-kvm
+    - libvirt
+    - libxslt-devel 
+    - libxml2-devel 
+    - libvirt-devel 
+    - libguestfs-tools-c
+    - wget
+    - ansible
+
+- name: install vagrant
+  shell: yum -y install https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.4_x86_64.rpm creates=/usr/bin/vagrant
+  
+- name: install vagrant-libvirt
+  shell: vagrant plugin install vagrant-libvirt creates=/root/.vagrant.d/plugins.json
+

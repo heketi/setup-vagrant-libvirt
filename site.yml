@@ -1,0 +1,5 @@
+- name: Setup system for VMs
+  hosts: vmhosts
+  remote_user: root
+  roles:
+    - vmhost
