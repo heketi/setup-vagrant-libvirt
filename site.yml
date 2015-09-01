@@ -1,5 +1,8 @@
 - name: Setup system for VMs
   hosts: vmhosts
   remote_user: root
+  environment:
+    GOPATH: /root/git/go
+    PATH: "{{ ansible_env.PATH }}:/root/git/go/bin"
   roles:
     - vmhost

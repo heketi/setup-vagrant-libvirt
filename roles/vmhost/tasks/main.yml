@@ -10,9 +10,10 @@
 - name: disable selinux
   selinux: state=disabled
 
-- name: install libvirt
+- name: setup extra packages for Go, vagrant, and libvirt
   yum: name={{ item }} state=present
   with_items:
+    - git
     - gcc
     - golang
     - qemu
@@ -30,4 +31,35 @@
   
 - name: install vagrant-libvirt
   shell: vagrant plugin install vagrant-libvirt creates=/root/.vagrant.d/plugins.json
+
+- name: create gopath directory
+  file: path=/root/git/go state=directory
+
+- name: set gopath
+  lineinfile: dest=/root/.bashrc regexp="^export GOPATH" line="export GOPATH=/root/git/go" 
+
+- name: set path
+  lineinfile: dest=/root/.bashrc regexp="^export PATH" line="export PATH=$PATH:$GOPATH/bin"
+
+- name: check heketi sources
+  stat: path=/root/git/go/src/github.com/heketi/heketi
+  register: heketi_exists
+
+- name: go get heketi
+  command: go get github.com/heketi/heketi
+  when: not heketi_exists.stat.exists
+
+- name: go get glock
+  command: go get github.com/robfig/glock
+  when: not heketi_exists.stat.exists
+
+- name: get latest heketi
+  command: git pull chdir=/root/git/go/src/github.com/heketi/heketi
+
+- name: update packages using glock
+  command: glock sync github.com/heketi/heketi chdir=/root/git/go/src
+
+- name: create heketi build
+  shell: go clean && make clean dist chdir=/root/git/go/src/github.com/heketi/heketi
+  
 
