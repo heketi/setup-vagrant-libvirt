@@ -1,8 +1,5 @@
-- name: setup epel
-  command: yum -y install http://mirror.clarkson.edu/epel/7/x86_64/e/epel-release-7-5.noarch.rpm creates=/etc/yum.repos.d/epel.repo
-
-- name: update system
-  yum: name=* state=latest
+- name: epel
+  yum: name=epel-release state=present
 
 - name: clean iptables
   command: iptables -F
@@ -13,10 +10,11 @@
 - name: setup extra packages for Go, vagrant, and libvirt
   yum: name={{ item }} state=present
   with_items:
+    - screen
     - git
     - gcc
+    - gcc-c++
     - golang
-    - qemu
     - qemu-kvm
     - libvirt
     - libxslt-devel 
@@ -25,41 +23,22 @@
     - libguestfs-tools-c
     - wget
     - ansible
+    - redhat-rpm-config
 
 - name: install vagrant
-  shell: yum -y install https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.4_x86_64.rpm creates=/usr/bin/vagrant
+  command: yum -y install https://releases.hashicorp.com/vagrant/1.7.4/vagrant_1.7.4_x86_64.rpm
   
+- name: install 0.0.3 fog
+  command: vagrant plugin install --plugin-version 0.0.3 fog-libvirt
+
 - name: install vagrant-libvirt
   shell: vagrant plugin install vagrant-libvirt creates=/root/.vagrant.d/plugins.json
 
-- name: create gopath directory
-  file: path=/root/git/go state=directory
+- name: install 0.0.3 fog
+  command: vagrant plugin install --plugin-version 0.0.3 fog-libvirt
 
-- name: set gopath
-  lineinfile: dest=/root/.bashrc regexp="^export GOPATH" line="export GOPATH=/root/git/go" 
-
-- name: set path
-  lineinfile: dest=/root/.bashrc regexp="^export PATH" line="export PATH=$PATH:$GOPATH/bin"
-
-- name: check heketi sources
-  stat: path=/root/git/go/src/github.com/heketi/heketi
-  register: heketi_exists
-
-- name: go get heketi
-  command: go get github.com/heketi/heketi
-  when: not heketi_exists.stat.exists
-
-- name: go get glock
-  command: go get github.com/robfig/glock
-  when: not heketi_exists.stat.exists
-
-- name: get latest heketi
-  command: git pull chdir=/root/git/go/src/github.com/heketi/heketi
-
-- name: update packages using glock
-  command: glock sync github.com/heketi/heketi chdir=/root/git/go/src
-
-- name: create heketi build
-  shell: go clean && make clean dist chdir=/root/git/go/src/github.com/heketi/heketi
-  
-
+- name: enable nfs server
+  service: name={{ item }} state=started enabled=yes
+  with_items:
+    - rpcbind
+    - nfs-server
